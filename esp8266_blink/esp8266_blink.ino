@@ -125,7 +125,7 @@ void loop(){
                 //myservo2.write(210-pos);// tell servo to go to position in variable 'pos'
                 delay(8);                       // waits 15ms for the servo to reach the position
               }              
-              digitalWrite(LED_BUILTIN, LOW);
+              digitalWrite(LED_BUILTIN, HIGH);
             }
             else if (header.indexOf("GET /4/off") >= 0) {
               Serial.println("GPIO 4 關閉");
