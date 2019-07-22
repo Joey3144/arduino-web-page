@@ -7,11 +7,12 @@
 #include <ESP8266WiFi.h>
 #include <Servo.h>
 
+
 Servo myservo;
 Servo myservo2;
 Servo myservo3;
 Servo myservo4;
-// Replace with your network credentials
+// 這裡要改
 const char* ssid     = "yuting";//小羊之家 iphone
 const char* password = "shung1210";//09819088633
 int pos = 0;
@@ -77,8 +78,9 @@ void setup() {
 
 void loop(){
   
+
   WiFiClient client = server.available();   // Listen for incoming clients
-  
+            
   if (client) {                             // If a new client connects,
     Serial.println("New Client.");          // print a message out in the serial port
     String currentLine = "";                // make a String to hold incoming data from the client
@@ -99,32 +101,32 @@ void loop(){
             client.println();
             myservo.write(n);
             // turns the GPIOs on and off
-            //if (header.indexOf("GET /5/right") >= 0) {
-            //test++;
-            //Serial.println(test);
-            if((header.indexOf("GET /5/right") >= 0)){   
+            if((header.indexOf("GET /5/right") >= 0)){  
               Serial.println("GPIO 5 右轉");
               
               for (pos = n; pos >= 30; pos -= 1) { // goes from 180 degrees to 0 degrees
+                Serial.println(pos);
                 myservo.write(pos);//pos+10
                 n=pos;
                 //myservo2.write(210-pos);// tell servo to go to position in variable 'pos'
-                delay(15);                       // waits 15ms for the servo to reach the position
-              }
+                delay(8);                       // waits 15ms for the servo to reach the position
+                
+              }              
               digitalWrite(LED_BUILTIN, HIGH);
             } 
-            else if ((header.indexOf("GET /5/left") >= 0)){ //&&(ifhold==true)  //&&(ifhold==true)
+            else if ((header.indexOf("GET /5/left") >= 0)){ //dir=="left"
               Serial.println("GPIO 5 左轉");
               
               for (pos = n; pos <= 150; pos += 1) { // goes from 0 degrees to 180 degrees
+                Serial.println(pos);
                 // in steps of 1 degree
                 myservo.write(pos);
                 n=pos;
                 //myservo2.write(210-pos);// tell servo to go to position in variable 'pos'
-                delay(15);                       // waits 15ms for the servo to reach the position
-              }
+                delay(8);                       // waits 15ms for the servo to reach the position
+              }              
               digitalWrite(LED_BUILTIN, LOW);
-            }  
+            }
             else if (header.indexOf("GET /4/off") >= 0) {
               Serial.println("GPIO 4 關閉");
               output4State = "關閉";
@@ -212,15 +214,22 @@ void loop(){
             client.println(".button2 {background-color: #00FF00;}");
             client.println(".button3 {background-color: #E63F00;}</style></head>");
             // Web Page Heading
-
+            // 這裡要改
+            client.println("<script>");
+            client.println("function turnleft(){location.href=\"http://192.168.0.101/5/left\"}");
+            client.println("function turnright(){location.href=\"http://192.168.0.101/5/right\"}");
+            client.println("function mouseup(){location.href=\"http://192.168.0.101\"}");
+            client.println("</script>");
             
             client.println("<body><h1>ESPDUINO網頁伺服器</h1><br/>");
             client.println("<table><tr><td>");
             // Display current state, and ON/OFF buttons for GPIO 5
             client.println("GPIO 5 - 前輪 : &nbsp;");
-            // If the output5State is off, it displays the ON button       
-            client.println("<a href=\"/5/left\"><button   class=\"button button3\">左轉</button></a>&nbsp;&nbsp;&nbsp;"); // <a href=\"/5/left\"> //onmousedown=\"hold()\" onmouseup=\"nhold()\"  onclick=\"turnleft()\"
-            client.println("<a href=\"/5/right\"><button   class=\"button button3\">右轉</button></a>");   //<a href=\"/5/right\">
+            // If the output5State is off, it displays the ON button
+                
+            //  <a href=\"/5/left\"> <a href=\"/5/right\">
+            client.println("<button onmousedown=\"turnleft()\" onmouseup=\"mouseup()\"  class=\"button button3\">左轉</button>&nbsp;&nbsp;&nbsp;"); // <a href=\"/5/left\"> //onmousedown=\"hold()\" onmouseup=\"nhold()\"  onclick=\"turnleft()\"
+            client.println("<button onmousedown=\"turnright()\" onmouseup=\"mouseup()\"  class=\"button button3\">右轉</button>");   //<a href=\"/5/right\">
             //   
             //}
             client.println("</td></tr></table>");
