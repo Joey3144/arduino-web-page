@@ -36,13 +36,16 @@ String header;
 
 // Auxiliar variables to store the current output state
 String output1State = "未啟動";
-String output2State = "關閉";
+String output2State = "前進";
 String output3State = "關閉";
-String output4State = "關閉";
+String output4State = "降下";
 
 
 // Assign output variables to GPIO pins
-
+const int output4 = 5;
+const int output3 = 4;
+const int output2 = 2;
+const int output1 = 0;
 
 
 
@@ -51,14 +54,25 @@ void setup() {
   Serial.begin(115200);
   
   // 伺服馬達腳位設定
-  myservo1.attach(D0);  //左右轉
+  myservo1.attach(D0);  
   myservo2.attach(D3);
-  myservo3.attach(D5);//橋
-  myservo4.attach(D16); //avail: 0 (2) 3 4 5 16 unavail: 1  橋
+  myservo3.attach(D5);
+  myservo4.attach(D16); //avail: 0 (2) 3 4 5 16 unavail: 1
 
   
   // Initialize the output variables as outputs
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(output1, OUTPUT);
+  pinMode(output2, OUTPUT);
+  pinMode(output3, OUTPUT);
+  pinMode(output4, OUTPUT);
+
+
+  // Set outputs to LOW
+  digitalWrite(output1, LOW);
+  digitalWrite(output2, LOW);
+  digitalWrite(output3, LOW);
+  digitalWrite(output4, LOW);
 
   
   // Connect to Wi-Fi network with SSID and password
@@ -78,23 +92,14 @@ void setup() {
   Serial.println(WiFi.localIP());
   server.begin();
 }
-//車子開跑程式 flase停止
-void goloop(bool x){
-  if(x){ 
-  myservo1.attach(D0);  
-  myservo2.attach(D3);
-  myservo1.write(-360);  
-  myservo2.write(360);
-  }
-  else{
-  myservo1.detach();  
-  myservo2.detach();
-    }
-}
+
 
 
 void loop(){
- 
+
+  //myservo1.write(360);
+  //myservo1.write(-360);
+  
   WiFiClient client = server.available();   // Listen for incoming clients
   
   if(client)
@@ -106,17 +111,17 @@ void loop(){
   if (client || (LeftButtonDown==true&&n>30) || (RightButtonDown==true&&n<150)) {             // If a new client connects   
     String currentLine = "";                                                              // make a String to hold incoming data from the client
     while (client.connected() || LeftButtonDown==true || RightButtonDown==true) {           // loop while the client's connected
-      
+    
       if (client.available() || LeftButtonDown==true || RightButtonDown==true) {             // if there's bytes to read from the client,  client.available()        
         char c = client.read();             // read a byte, then          
         header += c;
-    
+        
         if (c == '\n' || LeftButtonDown==true || RightButtonDown==true) {                    // if the byte is a newline character c == '\n'
           // if the current line is blank, you got two newline characters in a row.
           // that's the end of the client HTTP request, so send a response:
-          
           if (currentLine.length() >= 0) 
-            {
+            { 
+              
             // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
             // and a content-type so the client knows what's coming, then a blank line:
             client.println("HTTP/1.1 200 OK");
@@ -125,85 +130,101 @@ void loop(){
             client.println();
             myservo1.write(n);
 
-            if(client.available())
+            /*if(header.indexOf("GET /1/up") >= 0)
             {
                 LeftButtonDown=false;
                 RightButtonDown=false;
-            }
+            }*/
             
-            if((header.indexOf("GET /5/left") >= 0))
+            if((header.indexOf("GET /1/left") >= 0))
             {
-              Serial.print((header.indexOf("GET /5/left")));
               LeftButtonDown=true;
             }
             
-            if((header.indexOf("GET /5/right") >= 0))
+            if((header.indexOf("GET /1/right") >= 0))
             {
               RightButtonDown=true;
             }
-            //左轉 限制30度
-            if(((header.indexOf("GET /5/left")>=0)) || (LeftButtonDown==true))
+            
+            if(((header.indexOf("GET /1/left")>=0)) || (LeftButtonDown==true))
             {
               if(n>30)
               {
                 servo1pos=n;
-                servo1pos--;
+                servo1pos-=1;
                 Serial.println(servo1pos);
                 myservo1.write(servo1pos);
                 n=servo1pos;
-                delay(8);
+                delay(2);
               } 
             }
-            //右轉 限制150度
-            if((header.indexOf("GET /5/right")>=0) || (RightButtonDown==true))
+            
+            else if((header.indexOf("GET /1/right")>=0) || (RightButtonDown==true))
             {
               if(n<150)
               {
                 servo1pos=n;
-                servo1pos++;
+                servo1pos+=1;
                 Serial.println(servo1pos);
                 myservo1.write(servo1pos);
                 n=servo1pos;
-                delay(8); 
+                delay(2); 
               }
             }
-            //目前無用
-            if (header.indexOf("GET /4/back") >= 0) 
+            
+            else if (header.indexOf("GET /2/back") >= 0) 
             {
-              Serial.println("GPIO 4 關閉");
-              output2State = "關閉";
-              digitalWrite(D3, HIGH);
-              digitalWrite(D16, LOW);
+              Serial.println("後退");
+              output2State = "後退";
+              //myservo2.detach();  
+              //myservo4.detach();
+              myservo2.write(360);
+              myservo4.write(-360);
+              //digitalWrite(D3, HIGH);
+              //digitalWrite(D16, LOW);
               delay(15);                       
             } 
             
-            else if (header.indexOf("GET /4/go") >= 0) 
+            else if (header.indexOf("GET /2/go") >= 0) 
             {
-              Serial.println("GPIO 4 開啟");
-              output2State = "開啟";
-              digitalWrite(D3, LOW);
-              digitalWrite(D16, HIGH);
+              Serial.println("前進");
+              output2State = "前進";
+              myservo2.attach(D3);  
+              myservo4.attach(D16);
+              myservo2.write(-360);
+              myservo4.write(360);
+              //digitalWrite(D3, LOW);
+              //digitalWrite(D16, HIGH);
               delay(15);                       
             }
-            //目前無用
-            else if (header.indexOf("GET /2/off") >= 0) 
+            
+            else if (header.indexOf("GET /3/off") >= 0) 
             {
-              Serial.println("GPIO 2 關閉");
+              Serial.println("GPIO 3 關閉");
               output3State = "關閉";
-              goloop(false);              
+              for (servo3pos = 70; servo3pos >= 0; servo3pos -= 1) 
+              { 
+                myservo3.write(servo3pos);
+                delay(15);                       
+              }              
               digitalWrite(LED_BUILTIN, HIGH);
             } 
             
-            else if (header.indexOf("GET /2/on") >= 0) {
-              Serial.println("GPIO 2 開啟");
+            else if (header.indexOf("GET /3/on") >= 0) {
+              Serial.println("GPIO 3 開啟");
               output3State = "開啟";
-              goloop(true);
+              for (servo3pos = 0; servo3pos <= 70; servo3pos += 1) 
+                { 
+                myservo3.write(servo3pos);
+                delay(15);                     
+                }
               digitalWrite(LED_BUILTIN, LOW);
             }
-            
-            else if (header.indexOf("GET /0/off") >= 0) {
-              Serial.println("GPIO 0 關閉");
-              output4State = "關閉";
+
+            //降下
+            else if (header.indexOf("GET /4/down") >= 0) {
+              Serial.println("降下");
+              output4State = "降下";
               for (servo2pos = 70; servo2pos >= 0; servo2pos -= 1) 
                 { 
                 myservo4.write(servo2pos);
@@ -212,11 +233,12 @@ void loop(){
                 }
               digitalWrite(LED_BUILTIN, HIGH);
             } 
-            
-            else if (header.indexOf("GET /0/on") >= 0) 
+
+            //升起
+            else if (header.indexOf("GET /4/up") >= 0) 
             {
-              Serial.println("GPIO 0 開啟");
-              output4State = "開啟";
+              Serial.println("升起");
+              output4State = "升起";
               for (servo2pos = 0; servo2pos <= 70; servo2pos += 1) 
               {
                 myservo4.write(servo2pos);
@@ -240,96 +262,94 @@ void loop(){
             client.println(".button {width:150px;height:80px; background-color: #ddd;border-radius: 15px;all 0.5s ease;box-shadow: 1px 1px 1px black; color: white; padding: 16px 40px;");   //#195B6A
             client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
             client.println("body {max-width:100%;height:auto; text-align:center; line-height:50px; font-size:35px; color:#000000; padding:30px 60px; font-weight:bold; background-color:#C6C6C6;}");
-            client.println("table {height:auto;border:none;margin-right:auto; margin-left:auto;padding:15px 50px;  background-color:#838385;}");
+            client.println("table {width:700px; height:auto;border:none;margin-right:auto; margin-left:auto;padding:15px 50px;  background-color:#838385;}");
             client.println("tr {height:auto;border:none;vertical-align:bottom;text-align:center;padding:15px 30px;}");
-            client.println(".table2 {height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#979599;}");
-            client.println(".table3 {height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#716E73;}");
-            client.println(".table4 {height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#5D5A5E;}");
+            client.println(".table2 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#979599;}");
+            client.println(".table3 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#716E73;}");
+            client.println(".table4 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#5D5A5E;}");
             client.println(".button2 {background-color: #00FF00;}");
             client.println(".button3 {background-color: #E63F00;}</style></head>");
 
             
             // JavaScript部分
             client.println("<script>");
-            client.println("var uu=1");
-            client.println("function turnleft(){location.href=\"http://172.20.10.2/5/left\"}");
-            client.println("function turnright(){location.href=\"http://172.20.10.2/5/right\"}");
-            client.println("function mouseup(){location.href=\"http://172.20.10.2/5/up\"}");
-            client.println("function mousemove(){location.href=\"http://172.20.10.2/5/up\"}");           
+            client.println("function turnleft(){location.href=\"http://192.168.0.101/1/left\"}");
+            client.println("function turnright(){location.href=\"http://192.168.0.101/1/right\"}");
+            client.println("function mouseup(){location.href=\"http://192.168.0.101/1/up\"}");
+            //client.println("function mousemove(){location.href=\"http://192.168.0.101/1/up\"}");           
             client.println("</script>");
 
 
             //Body部分
-            client.println("<body><h1>ESPDUINO網頁伺服器</h1><br/>");
+            client.println("<body><h1>ESPDUINO網頁伺服器</h1>");
 
             // 車子方向 (左轉、右轉)
             client.println("<table><tr><td>");            
             client.println("車子 - 方向 : &nbsp;");
-            client.println("<button  onmousedown=\"turnleft()\"   onmousemove=\"mousemove()\"  onmouseup=\"mouseup()\"  class=\"button button3\">左轉</button>&nbsp;&nbsp;&nbsp;"); 
-            client.println("<button  onmousedown=\"turnright()\"  onmousemove=\"mousemove()\"  onmouseup=\"mouseup()\"  class=\"button button3\">右轉</button>");   
+            client.println("<button  onmousedown=\"turnleft()\"     onmouseup=\"mouseup()\"  class=\"button button3\">左轉</button>&nbsp;&nbsp;&nbsp;"); 
+            client.println("<button  onmousedown=\"turnright()\"    onmouseup=\"mouseup()\"  class=\"button button3\">右轉</button>");   
             client.println("</td></tr></table>");
             
             // 車子前進、後退
             client.println("<table  class=\"table2 \" ><tr><td>");
             
-            if(output2State=="關閉") 
+            if(output2State=="後退") 
             { 
-              client.println("車子 - 後退 : <font color=\"red\">後退</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println(" 車子 : <font color=\"red\">後退</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             } 
             else
             {
-              client.println("車子 - 前進 : <font color=\"#00FF00\">前進</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println(" 車子 : <font color=\"#00FF00\">前進</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             }
 
                  
-            if (output2State=="關閉") 
+            if (output2State=="後退") 
             {
-              client.println("<a href=\"/4/go\"><button class=\"button\">後退</button></a>");
+              client.println("<a href=\"/2/go\"><button class=\"button\">後退</button></a>");
             } 
             else 
             {
-              client.println("<a href=\"/4/back\"><button class=\"button button2\">前進</button></a>");
+              client.println("<a href=\"/2/back\"><button class=\"button button2\">前進</button></a>");
             }
-            
-            // 半橋的升降
             client.println("</td></tr></table>");
+
+            // 半橋的升降
             client.println("<table  class=\"table3 \" ><tr><td>");   
             if(output3State=="關閉") 
             { 
-              client.println("GPIO 2 - 狀態(橋後) : <font color=\"red\">關閉</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("無作用 : <font color=\"red\">關閉</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             } else{
-              client.println("GPIO 2 - 狀態(橋後) : <font color=\"#00FF00\">開啟</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("無作用 : <font color=\"#00FF00\">開啟</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             }
      
             if (output3State=="關閉") 
             {
-              client.println("<a href=\"/2/on\"><button class=\"button\">OFF</button></a>");
+              client.println("<a href=\"/3/on\"><button class=\"button\">OFF</button></a>");
             } 
             else 
             {
-              client.println("<a href=\"/2/off\"><button class=\"button button2\">ON</button></a>");
+              client.println("<a href=\"/3/off\"><button class=\"button button2\">ON</button></a>");
             }
+            client.println("</td></tr></table>");
 
             // 兩橋的升降
-            client.println("</td></tr></table>");
-            // Display current state, and ON/OFF buttons for GPIO 0
             client.println("<table  class=\"table4 \" ><tr><td>");  
-            if(output4State=="關閉") 
+            if(output4State=="降下") 
             { 
-              client.println("GPIO 0 - 狀態(橋同時) : <font color=\"red\">關閉</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("橋狀態 : <font color=\"red\">降下</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             } 
             else
             {
-              client.println("GPIO 0 - 狀態(橋同時) : <font color=\"#00FF00\">開啟</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("橋狀態 : <font color=\"#00FF00\">升起</font>&nbsp;&nbsp;&nbsp;&nbsp;");
             }
    
-            if (output4State=="關閉") 
+            if (output4State=="降下") 
             {
-              client.println("<a href=\"/0/on\"><button class=\"button\">OFF</button></a>");
+              client.println("<a href=\"/4/up\"><button class=\"button\">降下</button></a>");
             } 
             else 
             {
-              client.println("<a href=\"/0/off\"><button class=\"button button2\">ON</button></a>");
+              client.println("<a href=\"/4/down\"><button class=\"button button2\">升起</button></a>");
             }
             client.println("</td></tr></table>");
             client.println("</body></html>");
@@ -358,9 +378,7 @@ void loop(){
     
     // Close the connection
     client.stop();
-    Serial.println("Client disconnected.");
-    Serial.println("");
-    delay(30);
+    delay(5);
   }
 
 }
