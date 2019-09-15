@@ -176,13 +176,16 @@ void loop(){
             
             else if (header.indexOf("GET /2/back") >= 0) 
             {
+              //待測轉速   
+              
               Serial.println("後退");
               output2State = "後退"; //好像不用了，再測測看
               myservo2.attach(D3);  
               myservo4.attach(D16);
               myservo2.write(360);
               myservo4.write(-360);
-              delay(1);                       
+              delay(1);    
+                              
             } 
             
             else if (header.indexOf("GET /2/go") >= 0) 
