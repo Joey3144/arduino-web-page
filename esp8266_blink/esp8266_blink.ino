@@ -16,8 +16,8 @@ Servo myservo3;
 
 
 // 網路ID與密碼
-const char* ssid     = "iphone";
-const char* password = "adcebkcu";
+const char* ssid     = "yuting99";
+const char* password = "shung1210";
 int servo1pos = 0;
 int servo2pos = 0;
 int servo3pos = 0;
@@ -54,10 +54,12 @@ void setup() {
   Serial.begin(115200);
   
   // 伺服馬達腳位設定
-  myservo1.attach(D0);  
-  myservo2.attach(D3);
+  //腳位備註: avail: 0 (2) 3 4 5 16 unavail: 1
+  myservo1.attach(D0);  //前輪
+  myservo2.attach(D3);  //後輪
   myservo3.attach(D5);
-  myservo4.attach(D16); //avail: 0 (2) 3 4 5 16 unavail: 1
+  myservo4.attach(D16); //後輪
+  
 
   
   // Initialize the output variables as outputs
@@ -175,27 +177,32 @@ void loop(){
             else if (header.indexOf("GET /2/back") >= 0) 
             {
               Serial.println("後退");
-              output2State = "後退";
-              //myservo2.detach();  
-              //myservo4.detach();
+              output2State = "後退"; //好像不用了，再測測看
+              myservo2.attach(D3);  
+              myservo4.attach(D16);
               myservo2.write(360);
               myservo4.write(-360);
-              //digitalWrite(D3, HIGH);
-              //digitalWrite(D16, LOW);
-              delay(15);                       
+              delay(1);                       
             } 
             
             else if (header.indexOf("GET /2/go") >= 0) 
             {
               Serial.println("前進");
-              output2State = "前進";
+              output2State = "前進";//好像不用了，再測測看
               myservo2.attach(D3);  
               myservo4.attach(D16);
               myservo2.write(-360);
               myservo4.write(360);
-              //digitalWrite(D3, LOW);
-              //digitalWrite(D16, HIGH);
-              delay(15);                       
+              delay(100);                       
+            }
+
+            else if (header.indexOf("GET /2/stop") >= 0) 
+            {
+              Serial.println("停止");
+              output2State = "停止";//好像不用了，再測測看
+              myservo2.detach();  
+              myservo4.detach();
+              delay(100);                       
             }
             
             else if (header.indexOf("GET /3/off") >= 0) 
@@ -258,70 +265,92 @@ void loop(){
 
             
             // CSS部分 
-            client.println("<style>html { font-family:   Helvetica; display: inline-block; margin: 0px auto; text-align: center;}");
+            client.println("<style>html { font-family:   Helvetica; display: inline-block; margin: 0px auto; }");
             client.println(".button {width:150px;height:80px; background-color: #ddd;border-radius: 15px;all 0.5s ease;box-shadow: 1px 1px 1px black; color: white; padding: 16px 40px;");   //#195B6A
             client.println("text-decoration: none; font-size: 30px; margin: 2px; cursor: pointer;}");
-            client.println("body {max-width:100%;height:auto; text-align:center; line-height:50px; font-size:35px; color:#000000; padding:30px 60px; font-weight:bold; background-color:#C6C6C6;}");
-            client.println("table {width:700px; height:auto;border:none;margin-right:auto; margin-left:auto;padding:15px 50px;  background-color:#838385;}");
-            client.println("tr {height:auto;border:none;vertical-align:bottom;text-align:center;padding:15px 30px;}");
-            client.println(".table2 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#979599;}");
-            client.println(".table3 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#716E73;}");
-            client.println(".table4 {width:700px; height:auto;border:none; margin-right:auto; margin-left:auto; background-color:#5D5A5E;}");
+            client.println("body {max-width:100%; height:auto;  line-height:50px; font-size:35px; color:#000000; padding:30px 60px; font-weight:bold; background-color:#C6C6C6;}");
+            client.println("table {width:100%; max-width:800px; height:120px; border:none; padding:15px 15px 15px 25px; margin-left:auto; margin-right:auto; background-color:#838385;}");
+            client.println("tr { border:none; }");
+            client.println(".tdhead { width:22%; text-align:center; }");
+            client.println(".tdsign { width:3%; }");
+            client.println(".tdbutton { text-align:center; }");
+            client.println(".table2 { background-color:#979599;}");
+            client.println(".table3 { background-color:#716E73;}");
+            client.println(".table4 { background-color:#5D5A5E;}");
             client.println(".button2 {background-color: #00FF00;}");
             client.println(".button3 {background-color: #E63F00;}</style></head>");
+
 
             
             // JavaScript部分
             client.println("<script>");
-            client.println("function turnleft(){location.href=\"http://192.168.0.101/1/left\"}");
-            client.println("function turnright(){location.href=\"http://192.168.0.101/1/right\"}");
-            client.println("function mouseup(){location.href=\"http://192.168.0.101/1/up\"}");
-            //client.println("function mousemove(){location.href=\"http://192.168.0.101/1/up\"}");           
+            client.println("function turnleft(){location.href=\"/1/left\"}");
+            client.println("function turnright(){location.href=\"/1/right\"}");
+            client.println("function mouseup(){location.href=\"/1/up\"}");        
             client.println("</script>");
 
 
             //Body部分
-            client.println("<body><h1>ESPDUINO網頁伺服器</h1>");
+            client.println("<body><div style=text-align:center><h1>ESPDUINO網頁伺服器</h1></div>");
 
             // 車子方向 (左轉、右轉)
-            client.println("<table><tr><td>");            
-            client.println("車子 - 方向 : &nbsp;");
-            client.println("<button  onmousedown=\"turnleft()\"     onmouseup=\"mouseup()\"  class=\"button button3\">左轉</button>&nbsp;&nbsp;&nbsp;"); 
+            client.println("<table><tr>");   
+            client.println("<td class=\"tdhead\">");          
+            client.println("前輪控制 ");
+            client.println("</td>");
+
+            client.println("<td class=\"tdsign\">");          
+            client.println(":");
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
+            client.println("<button  onmousedown=\"turnleft()\"     onmouseup=\"mouseup()\"  class=\"button button3\">左轉</button>"); 
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
             client.println("<button  onmousedown=\"turnright()\"    onmouseup=\"mouseup()\"  class=\"button button3\">右轉</button>");   
-            client.println("</td></tr></table>");
+            client.println("</td>");
+            client.println("</tr></table>");
             
             // 車子前進、後退
-            client.println("<table  class=\"table2 \" ><tr><td>");
+            client.println("<table  class=\"table2 \" ><tr>"); 
+            client.println("<td class=\"tdhead\">"); 
+            client.println("後輪控制 ");
+            client.println("</td>");
+
+            client.println("<td class=\"tdsign\">");          
+            client.println(":");
+            client.println("</td>");
             
-            if(output2State=="後退") 
-            { 
-              client.println(" 車子 : <font color=\"red\">後退</font>&nbsp;&nbsp;&nbsp;&nbsp;");
-            } 
-            else
-            {
-              client.println(" 車子 : <font color=\"#00FF00\">前進</font>&nbsp;&nbsp;&nbsp;&nbsp;");
-            }
-
-                 
-            if (output2State=="後退") 
-            {
-              client.println("<a href=\"/2/go\"><button class=\"button\">後退</button></a>");
-            } 
-            else 
-            {
-              client.println("<a href=\"/2/back\"><button class=\"button button2\">前進</button></a>");
-            }
-            client.println("</td></tr></table>");
-
+            client.println("<td class=\"tdbutton\">");
+            client.println("<a href= \"/2/go\" >   <button   class=\"button button3\">前進</button> </a>"); 
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
+            client.println("<a href= \"/2/back\" > <button   class=\"button button3\">後退</button> </a>");
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
+            client.println("<a href= \"/2/stop\" > <button   class=\"button button3\">停止</button> </a>");      
+            client.println("</td>");
+            client.println("</tr></table>");
+            
             // 半橋的升降
-            client.println("<table  class=\"table3 \" ><tr><td>");   
+            client.println("<table  class=\"table3 \" ><tr>");   
+            client.println("<td class=\"tdhead\">");   
             if(output3State=="關閉") 
             { 
-              client.println("無作用 : <font color=\"red\">關閉</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("無作用 <font color=\"red\"></font>");
             } else{
-              client.println("無作用 : <font color=\"#00FF00\">開啟</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("無作用 <font color=\"#00FF00\"></font>");
             }
-     
+            client.println("</td>");
+
+            client.println("<td class=\"tdsign\">");          
+            client.println(":");
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
             if (output3State=="關閉") 
             {
               client.println("<a href=\"/3/on\"><button class=\"button\">OFF</button></a>");
@@ -330,19 +359,27 @@ void loop(){
             {
               client.println("<a href=\"/3/off\"><button class=\"button button2\">ON</button></a>");
             }
-            client.println("</td></tr></table>");
+            client.println("</td>");
+            client.println("</tr></table>");
 
             // 兩橋的升降
-            client.println("<table  class=\"table4 \" ><tr><td>");  
+            client.println("<table  class=\"table4 \" ><tr>");  
+            client.println("<td class=\"tdhead\">");  
             if(output4State=="降下") 
             { 
-              client.println("橋狀態 : <font color=\"red\">降下</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("橋控制<font color=\"red\"></font>");
             } 
             else
             {
-              client.println("橋狀態 : <font color=\"#00FF00\">升起</font>&nbsp;&nbsp;&nbsp;&nbsp;");
+              client.println("橋控制<font color=\"#00FF00\"></font>");
             }
-   
+            client.println("</td>");
+
+            client.println("<td class=\"tdsign\">");          
+            client.println(":");
+            client.println("</td>");
+            
+            client.println("<td class=\"tdbutton\">");
             if (output4State=="降下") 
             {
               client.println("<a href=\"/4/up\"><button class=\"button\">降下</button></a>");
@@ -351,7 +388,8 @@ void loop(){
             {
               client.println("<a href=\"/4/down\"><button class=\"button button2\">升起</button></a>");
             }
-            client.println("</td></tr></table>");
+            client.println("</td>");
+            client.println("</tr></table>");
             client.println("</body></html>");
             
             // The HTTP response ends with another blank line
